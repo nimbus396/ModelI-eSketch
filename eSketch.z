@@ -1,0 +1,162 @@
+;
+; Simple Etch-a-Sketch for the TRS-80 Model-1
+;
+; Author  : Andy johnson
+; Date    : 2020/08/28
+;
+; Version : 1.0
+
+; Model-I Calls
+
+Cls:	equ	01c9h		; Clears the screen
+KbScan:	equ	002bh		; Same as INKEY$ (Basic)
+Screen:	equ	3c00h		; Start of screen for characters
+SetXmin:equ	0		; X Coordinate Minimum
+SetXMax:equ	127d		; X Coordinate Maximun (127)
+SetYMin:equ	SetXmin		; Y = X minimum (0) for Set
+SetYMax:equ	44d		; Max is 47 but, save last line
+SetCall:equ	150h		; To be loaded to HL
+SetOn:	equ	80h		; Turn SET() on
+SetOff:	equ	01h		; Turn RESET() on
+SetEnd:	equ	188ch		; RST will call this and find )+
+
+	org	8000h		; Origin
+
+; Coordinates
+XCoord:	ds	1
+YCoord:	ds	1
+SetFlg:	ds	1
+
+Init:
+	ld	a,SetOn
+	ld	(SetFlg),a
+	ld	a,0
+	ld	(XCoord),a
+	ld	(YCoord),a
+	call	Cls
+	ld	b,65
+	ld	a,b
+	ld	(XCoord), a
+	ld	a,23
+	ld	(YCoord), a
+	nop
+	call	Grafix
+Start:
+	ld	a,(SetOn)
+	ld	(SetFlg),a
+	call	Grafix
+	call	Swait
+	ld	a,(SetOff)
+	ld	(SetFlg),a
+	call	Grafix
+
+	call	GetKey
+
+; Did we quit?
+	cp	51h
+	jr	nz,Start
+	ret
+
+Swait:
+; simple wait
+	ld	bc,2048d
+loop:
+	dec	bc
+	ld	a,b
+	or	c
+	jr	nz,loop
+	ret
+; Uses SET to draw
+Grafix:
+	ld	a,(SetFlg)
+	ld	h,a
+	ld	a,(XCoord)
+	ld	b,a
+	ld	a,(YCoord)
+	push	hl
+	push	bc
+	ld	hl,SetEnd
+	jp	SetCall
+	ret
+
+; Get a key from the keyboard and do something
+; Assumes Q is Quit
+GetKey:
+	ld	a,0ffh
+	call	KbScan
+	cp	0ffh
+	ret	z
+;up key
+	cp	5bh
+	call	z,Up
+
+;down key
+	cp	0ah
+	call	z,Down
+
+;right key
+	cp	9h
+	call	z,Right
+
+;left key
+	cp	8h
+	call	z,Left
+	ret
+
+; Key Actions
+Up:
+	push af			; Save A and Flags	
+	push bc			; Save BC pair
+	ld	a,(YCoord)	; Get X Coordinate
+	dec	a		; add 1
+	cp	SetYMin		; We hit the edge
+	jr	nz,USkip
+	inc	a
+USkip:
+	ld	(YCoord),a	; Save it
+	pop	bc		; Restore BC
+	pop	af		; Restore A and Flags
+	ret
+Down:
+	push af			; Save A and Flags	
+	push bc			; Save BC pair
+	ld	a,(YCoord)	; Get X Coordinate
+	inc	a		; add 1
+	cp	SetYMax		; We hit the edge
+	jr	nz,DSkip
+	dec	a		; sub 1 if edge
+DSkip:
+	ld	(YCoord),a	; Save it
+	pop	bc		; Restore BC
+	pop	af		; Restore A and Flags
+	ret
+Left:
+	push af			; Save A and Flags	
+	push bc			; Save BC pair
+	ld	a,(XCoord)	; Get X Coordinate
+	dec	a		; sub 1
+	cp	SetXMin		; We hit the edge
+	jr	nz,LSkip
+	inc	a		; add 1 if edge
+LSkip:
+	ld	(XCoord),a	; Save it
+	pop	bc		; Restore BC
+	pop	af		; Restore A and Flags
+	ret			; Return
+Right:
+	push af			; Save A and Flags	
+	push bc			; Save BC pair
+	ld	a,(XCoord)	; Get X Coordinate
+	inc	a		; add 1
+	cp	SetXMax		; We hit the edge
+	jr	nz,RSkip
+	dec	a		; sub 1 if edge
+RSkip:
+	ld	(XCoord),a	; Save it
+	pop	bc		; Restore BC
+	pop	af		; Restore A and Flags
+	ret			; Return
+
+
+; Nothing below this line
+	end
