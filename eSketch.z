@@ -24,6 +24,7 @@ MsgPos:	equ	3fc0h		; last line
 	org	8000h		; Origin
 ;Variables
 Mesg:	db	"Arrows to move, Q to quit",0
+QMsg:	db	"Quiting!!!",0
 
 ; Coordinates
 XCoord:	ds	1
@@ -38,15 +39,7 @@ Init:
 	ld	a,23
 	ld	(YCoord), a
 	ld	bc,Mesg
-	ld	hl,MsgPos
-Mloop:
-	ld	a,(bc)
-	or	a
-	jp	z,Start
-	ld	(hl),a
-	inc	bc
-	inc	hl
-	jr	Mloop
+	call	PrintMsg
 	
 Start:
 	ld	a,(SetOn)
@@ -62,6 +55,8 @@ Start:
 ; Did we quit?
 	cp	51h
 	jr	nz,Start
+	ld	bc,QMsg
+	call	PrintMsg
 	ret
 
 Swait:
@@ -164,5 +159,24 @@ RSkip:
 	pop	af		; Restore A and Flags
 	ret			; Return
 
+PrintMsg:
+	ld	hl,MsgPos
+	push	hl
+	ld	a,40
+Cloop:
+	ld	(hl),' '
+	inc	hl
+	dec	a
+	jr	nz,Cloop
+
+	pop	hl
+Mloop:
+	ld	a,(bc)
+	or	a
+	ret	z
+	ld	(hl),a
+	inc	bc
+	inc	hl
+	jr	Mloop
 ; Nothing below this line
 	end Init
