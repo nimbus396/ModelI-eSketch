@@ -19,8 +19,11 @@ SetCall:equ	150h		; To be loaded to HL
 SetOn:	equ	80h		; Turn SET() on
 SetOff:	equ	01h		; Turn RESET() on
 SetEnd:	equ	188ch		; RST will call this and find )+
+MsgPos:	equ	3fc0h		; last line
 
 	org	8000h		; Origin
+;Variables
+Mesg:	db	"Arrows to move, Q to quit",0
 
 ; Coordinates
 XCoord:	ds	1
@@ -28,21 +31,24 @@ YCoord:	ds	1
 SetFlg:	ds	1
 
 Init:
-	ld	a,SetOn		; Turn SET() on
-	ld	(SetFlg),a
-	ld	a,0		; Zero the location buffers
-	ld	(XCoord),a
-	ld	(YCoord),a
-	call	Cls		; Clear the screen
-	ld	b,65		; Set initial location
+	call	Cls
+	ld	b,65
 	ld	a,b
 	ld	(XCoord), a
 	ld	a,23
 	ld	(YCoord), a
-	nop
-	call	Grafix		; Show the dot (redundant)
+	ld	bc,Mesg
+	ld	hl,MsgPos
+Mloop:
+	ld	a,(bc)
+	or	a
+	jp	z,Start
+	ld	(hl),a
+	inc	bc
+	inc	hl
+	jr	Mloop
+	
 Start:
-	; Simulate blinking by turning set on and off
 	ld	a,(SetOn)
 	ld	(SetFlg),a
 	call	Grafix
@@ -51,7 +57,7 @@ Start:
 	ld	(SetFlg),a
 	call	Grafix
 
-	call	GetKey		; Get the key
+	call	GetKey
 
 ; Did we quit?
 	cp	51h
@@ -158,6 +164,5 @@ RSkip:
 	pop	af		; Restore A and Flags
 	ret			; Return
 
-
 ; Nothing below this line
-	end Start
+	end Init
