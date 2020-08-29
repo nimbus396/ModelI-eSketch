@@ -28,20 +28,21 @@ YCoord:	ds	1
 SetFlg:	ds	1
 
 Init:
-	ld	a,SetOn
+	ld	a,SetOn		; Turn SET() on
 	ld	(SetFlg),a
-	ld	a,0
+	ld	a,0		; Zero the location buffers
 	ld	(XCoord),a
 	ld	(YCoord),a
-	call	Cls
-	ld	b,65
+	call	Cls		; Clear the screen
+	ld	b,65		; Set initial location
 	ld	a,b
 	ld	(XCoord), a
 	ld	a,23
 	ld	(YCoord), a
 	nop
-	call	Grafix
+	call	Grafix		; Show the dot (redundant)
 Start:
+	; Simulate blinking by turning set on and off
 	ld	a,(SetOn)
 	ld	(SetFlg),a
 	call	Grafix
@@ -50,7 +51,7 @@ Start:
 	ld	(SetFlg),a
 	call	Grafix
 
-	call	GetKey
+	call	GetKey		; Get the key
 
 ; Did we quit?
 	cp	51h
