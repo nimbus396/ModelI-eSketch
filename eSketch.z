@@ -10,7 +10,6 @@
 
 Cls:	equ	01c9h		; Clears the screen
 KbScan:	equ	002bh		; Same as INKEY$ (Basic)
-Screen:	equ	3c00h		; Start of screen for characters
 SetXmin:equ	0		; X Coordinate Minimum
 SetXMax:equ	127d		; X Coordinate Maximun (127)
 SetYMin:equ	SetXmin		; Y = X minimum (0) for Set
@@ -20,63 +19,68 @@ SetOn:	equ	80h		; Turn SET() on
 SetOff:	equ	01h		; Turn RESET() on
 SetEnd:	equ	188ch		; RST will call this and find )+
 MsgPos:	equ	3fc0h		; last line
+Delay:	equ	0060h		; Delays for BC*14.65 microseconds
 
 	org	8000h		; Origin
 ;Variables
-Mesg:	db	"Arrows to move, Q to quit",0
-QMsg:	db	"Quiting!!!",0
+Mesg:	db	" ----------------- Arrows to move, Q to quit -----------------",0
+QMsg:	db	" ------------------------ Quitting !!! -----------------------",0
+OutMsg: db "Press <Enter>",0
 
-; Coordinates
+; Coordinates and SET() flag
 XCoord:	ds	1
 YCoord:	ds	1
 SetFlg:	ds	1
 
 Init:
-	call	Cls
-	ld	b,65
-	ld	a,b
-	ld	(XCoord), a
+	call	Cls		; Clear the screen
+	ld	a,65		; Start in the middle of the screen
+	ld	(XCoord), a	; save X
 	ld	a,23
-	ld	(YCoord), a
-	ld	bc,Mesg
+	ld	(YCoord), a	; save Y
+	ld	bc,Mesg		; Print instructions at bottom of screen
 	call	PrintMsg
 	
 Start:
-	ld	a,(SetOn)
-	ld	(SetFlg),a
-	call	Grafix
-	call	Swait
-	ld	a,(SetOff)
+	; This simulates a blinking block by turning it on and off
+	ld	a,(SetOn)	; show the block
 	ld	(SetFlg),a
 	call	Grafix
 
-	call	GetKey
+	ld	bc,2048d	; delay before off
+	call	Delay		; destroys bc
+
+	ld	a,(SetOff)	; hide the block
+	ld	(SetFlg),a
+	call	Grafix
+
+	call	GetKey		; Get keyboard input
 
 ; Did we quit?
-	cp	51h
+	cp	51h		; Press Q
 	jr	nz,Start
-	ld	bc,QMsg
+	ld	bc,QMsg		; Print the Quit message
 	call	PrintMsg
+	ld	bc,2048d	; delay before off
+	call	Delay		; destroys bc
+	call	Cls		; Clear the screen
+	ld	bc,OutMsg	;Display "Press Enter"
+	call 	PrintMsg
 	ret
 
-Swait:
-; simple wait
-	ld	bc,2048d
-loop:
-	dec	bc
-	ld	a,b
-	or	c
-	jr	nz,loop
-	ret
-; Uses SET to draw
+; Uses SET/RESET to draw based on SET FLAG
 Grafix:
-	ld	a,(SetFlg)
-	ld	h,a
-	ld	a,(XCoord)
+	ld	a,(SetFlg)	; Set the SET() flag
+	ld	h,a		; Store in H for SET routine
+	ld	a,(XCoord)	; Set X
 	ld	b,a
-	ld	a,(YCoord)
+	ld	a,(YCoord)	; Set Y
+
+	; Push these before call (Required by SET)
 	push	hl
 	push	bc
+
+	; Use SET/RESET. HL and BC are parameters
 	ld	hl,SetEnd
 	jp	SetCall
 	ret
@@ -84,10 +88,7 @@ Grafix:
 ; Get a key from the keyboard and do something
 ; Assumes Q is Quit
 GetKey:
-	ld	a,0ffh
 	call	KbScan
-	cp	0ffh
-	ret	z
 ;up key
 	cp	5bh
 	call	z,Up
@@ -159,10 +160,12 @@ RSkip:
 	pop	af		; Restore A and Flags
 	ret			; Return
 
+; Prints a message to the Message line
 PrintMsg:
 	ld	hl,MsgPos
 	push	hl
 	ld	a,40
+; Clear the message line
 Cloop:
 	ld	(hl),' '
 	inc	hl
@@ -170,6 +173,7 @@ Cloop:
 	jr	nz,Cloop
 
 	pop	hl
+; and write the messag
 Mloop:
 	ld	a,(bc)
 	or	a
@@ -178,5 +182,8 @@ Mloop:
 	inc	bc
 	inc	hl
 	jr	Mloop
+
+
+
 ; Nothing below this line
 	end Init
