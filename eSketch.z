@@ -9,6 +9,8 @@
 ; Model-I Calls
 
 Cls:	equ	01c9h		; Clears the screen
+Screen:	equ	3c00h		; Screen start
+Glif:	equ	20h		; Space character
 KbScan:	equ	002bh		; Same as INKEY$ (Basic)
 SetXmin:equ	0		; X Coordinate Minimum
 SetXMax:equ	127d		; X Coordinate Maximun (127)
@@ -22,8 +24,9 @@ MsgPos:	equ	3fc0h		; last line
 Delay:	equ	0060h		; Delays for BC*14.65 microseconds
 
 	org	8000h		; Origin
+
 ;Variables
-Mesg:	db	" ----------------- Arrows to move, Q to quit -----------------",0
+Mesg:	db	" -------------- Arrows to move, (Q)uit, (C)lear --------------",0
 QMsg:	db	" ------------------------ Quitting !!! -----------------------",0
 OutMsg: db "Press <Enter>",0
 
@@ -57,6 +60,8 @@ Start:
 	call	GetKey		; Get keyboard input
 
 ; Did we quit?
+	cp	43h
+	call	z,ClearDisp	; Clear to message line
 	cp	51h		; Press Q
 	jr	nz,Start
 	ld	bc,QMsg		; Print the Quit message
@@ -183,7 +188,22 @@ Mloop:
 	inc	hl
 	jr	Mloop
 
-
+; Clear to message line
+ClearDisp:
+	push	a
+	push	hl
+	push	de
+	push	bc
+	ld	hl,Screen
+	ld	de,Screen+1
+	ld	bc,3c0h
+	ld	(hl),Glif
+	ldir
+	pop	bc
+	pop	de
+	pop	hl
+	pop	a
+	ret
 
 ; Nothing below this line
 	end Init
