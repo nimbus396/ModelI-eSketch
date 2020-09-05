@@ -46,14 +46,14 @@ Init:
 	
 Start:
 	; This simulates a blinking block by turning it on and off
-	ld	a,(SetOn)	; show the block
+	ld	a,SetOff	; hide the block
 	ld	(SetFlg),a
 	call	Grafix
 
 	ld	bc,2048d	; delay before off
 	call	Delay		; destroys bc
 
-	ld	a,(SetOff)	; hide the block
+	ld	a,SetOn		; show the block
 	ld	(SetFlg),a
 	call	Grafix
 
@@ -194,11 +194,11 @@ ClearDisp:
 	push	hl
 	push	de
 	push	bc
-	ld	hl,Screen
-	ld	de,Screen+1
-	ld	bc,3c0h
-	ld	(hl),Glif
-	ldir
+	ld	hl,Screen	; Start of Screen
+	ld	de,Screen+1	; Start + 1: will copy Glif from HL
+	ld	bc,3c0h		; one line before message line
+	ld	(hl),Glif	; put the Glif at start of screen
+	ldir			; (L)oa(d), (I)ncrement, (R)epeat
 	pop	bc
 	pop	de
 	pop	hl
